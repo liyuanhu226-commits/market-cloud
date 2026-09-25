@@ -305,14 +305,14 @@ function mapStock(r){
 /* ================= 颜色（红涨绿跌） ================= */
 function hex2rgb(h){ h = h.replace('#',''); return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16)]; }
 function mix(a, b, t){ var A = hex2rgb(a), B = hex2rgb(b); return 'rgb(' + [0,1,2].map(function(i){ return Math.round(A[i] + (B[i]-A[i]) * t); }).join(',') + ')'; }
-var C_FLAT = '#434956', C_UP1 = '#7d3a41', C_UP2 = '#f02f3c', C_DN1 = '#2d5f47', C_DN2 = '#0cae55';
+var C_FLAT = '#434956', C_UP1 = '#b03a45', C_UP2 = '#ff3140', C_DN1 = '#1e8a52', C_DN2 = '#00d060';
 function colorOf(v, max){
   if (v == null) return '#2f3440';
   if (v === 0) return C_FLAT;
   var t = Math.min(1, Math.abs(v) / max);
-  t = Math.pow(t, 0.75);
-  if (v > 0) return t < 0.12 ? mix(C_FLAT, C_UP1, t / 0.12) : mix(C_UP1, C_UP2, (t - 0.12) / 0.88);
-  return t < 0.12 ? mix(C_FLAT, C_DN1, t / 0.12) : mix(C_DN1, C_DN2, (t - 0.12) / 0.88);
+  t = Math.pow(t, 0.6);
+  if (v > 0) return t < 0.08 ? mix(C_FLAT, C_UP1, t / 0.08) : mix(C_UP1, C_UP2, (t - 0.08) / 0.92);
+  return t < 0.08 ? mix(C_FLAT, C_DN1, t / 0.08) : mix(C_DN1, C_DN2, (t - 0.08) / 0.92);
 }
 function quantileAbs(arr, q){ var a = arr.filter(function(v){return v != null;}).map(Math.abs).sort(function(x,y){return x-y;}); if (!a.length) return 1; return a[Math.min(a.length-1, Math.floor(a.length*q))] || 1; }
 function colorScale(items){
