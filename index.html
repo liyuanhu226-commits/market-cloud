@@ -41,6 +41,21 @@ main{flex:1;display:flex;gap:10px;padding:10px 16px 6px;min-height:0}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;position:relative}
 .panel.map{flex:1;min-width:0}
 .panel.side{width:360px;flex:none}
+main{flex-wrap:wrap}
+.panel.wide{flex:1 1 100%;min-width:0}
+.pbody{padding:2px 12px 10px}
+.movers{display:flex;gap:18px}
+.mv{flex:1;min-width:0}
+.mv-h{font-size:13px;font-weight:700;margin-bottom:2px}
+.mv-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.mv-row:last-child{border-bottom:0}
+.mv-row .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv-row .cd{color:var(--sub);font-size:11px}
+.mv-row .pc{font-variant-numeric:tabular-nums;font-weight:600;min-width:56px;text-align:right}
+.news{max-height:320px;overflow-y:auto}
+.news-item{padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.65}
+.news-item:last-child{border-bottom:0}
+.news-item .t{color:var(--sub);margin-right:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ptitle{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line);font-weight:600;font-size:13px;white-space:nowrap}
 .ptitle .hint{color:var(--sub);font-weight:400;font-size:12px;overflow:hidden;text-overflow:ellipsis}
 .crumb a{color:var(--accent);cursor:pointer;text-decoration:none;font-weight:600}
@@ -112,6 +127,7 @@ footer{padding:4px 16px 8px;color:#697186;font-size:11px;display:flex;justify-co
   footer{flex-direction:column;gap:4px;padding:6px 12px 14px}
   #toast{max-width:92vw;font-size:12.5px}
   .tt{min-width:0;font-size:12px}
+  .movers{flex-direction:column;gap:2px}
 }
 </style>
 <script>
@@ -173,9 +189,20 @@ yyyy`);var i=Wt(t),n=e?"getUTC":"get",a=i[n+"FullYear"](),o=i[n+"Month"]()+1,s=i
     <div id="bar"></div>
     <div id="summary"></div>
   </section>
+  <section class="panel wide">
+    <div class="ptitle"><span>异动个股 · 全市场涨跌榜</span><span class="hint">沪深A股实时排行</span></div>
+    <div class="pbody"><div class="movers">
+      <div class="mv"><div class="mv-h up">领涨 TOP10</div><div id="mvUp"><div class="mv-row"><span class="nm">加载中…</span></div></div></div>
+      <div class="mv"><div class="mv-h down">领跌 TOP10</div><div id="mvDown"><div class="mv-row"><span class="nm">加载中…</span></div></div></div>
+    </div></div>
+  </section>
+  <section class="panel wide">
+    <div class="ptitle"><span>财经快讯</span><span class="hint">新浪 7x24 · <span id="newsUpd"></span></span></div>
+    <div class="pbody"><div id="news" class="news"><div class="news-item">加载中…</div></div></div>
+  </section>
 </main>
 <footer>
-  <span>数据来源：东方财富公开行情接口（<span id="srcHost">push2.eastmoney.com</span>，JSONP）。主力净流入 = 超大单 + 大单净流入。数据仅供参考，不构成投资建议。</span>
+  <span>数据来源：东方财富公开行情接口（<span id="srcHost">push2.eastmoney.com</span>，JSONP）、新浪 7x24 快讯。主力净流入 = 超大单 + 大单净流入。数据仅供参考，不构成投资建议。</span>
   <span id="fetchInfo"></span>
 </footer>
 <div id="toast"></div>
@@ -249,7 +276,7 @@ function toast(msg){ var t = $('toast'); t.textContent = msg; t.style.display = 
 
 /* ================= JSONP（file:// 下可跨域） ================= */
 var cbSeq = 0;
-function jsonp(url, timeout){
+function jsonp(url, timeout, cbParam){
   return new Promise(function(resolve, reject){
     var cb = '__emcb_' + Date.now().toString(36) + '_' + (cbSeq++);
     var s = document.createElement('script'), done = false;
@@ -262,7 +289,7 @@ function jsonp(url, timeout){
     }
     window[cb] = function(d){ finish(null, d); };
     s.onerror = function(){ finish(new Error('网络错误')); };
-    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'cb=' + cb + '&_=' + Date.now();
+    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + (cbParam || 'cb') + '=' + cb + '&_=' + Date.now();
     document.head.appendChild(s);
   });
 }
@@ -543,6 +570,41 @@ function renderStatus(){
   return s;
 }
 
+/* ================= 异动个股与财经快讯 ================= */
+var MV_FS = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'; // 沪深A股
+var MV_FIELDS = 'f12,f13,f14,f2,f3,f6';
+function fetchMovers(){
+  var q = function(po){ return 'pn=1&pz=10&po=' + po + '&np=1&fltt=2&invt=2&fid=f3&fs=' + MV_FS + '&fields=' + MV_FIELDS; };
+  return Promise.all([em('/api/qt/clist/get', q(1)), em('/api/qt/clist/get', q(0))]);
+}
+function renderMovers(up, down){
+  var row = function(r){
+    var p = num(r.f2), pc = num(r.f3), k = cls(pc);
+    return '<div class="mv-row"><span class="nm">' + esc(r.f14) + '</span><span class="cd">' + esc(r.f12) + '</span><span class="pc ' + k + '">' + (p == null ? '--' : p.toFixed(2)) + '</span><span class="pc ' + k + '">' + pctS(pc) + '</span></div>';
+  };
+  var none = '<div class="mv-row"><span class="nm">暂无数据</span></div>';
+  $('mvUp').innerHTML = ((up.diff || []).map(row).join('')) || none;
+  $('mvDown').innerHTML = ((down.diff || []).map(row).join('')) || none;
+}
+var NEWS_KW = /A股|沪深|沪指|深成|创业板|科创板|科创50|北交所|北证|恒生|港股|央行|证监会|发改委|财政部|国常会|政治局|降准|降息|加息|MLF|逆回购|两融|北向|外资|险资|IPO|退市|涨停|跌停|指数|板块|成交|美联储|美股|道指|纳指|标普|英伟达|关税|GDP|CPI|PCE|非农|人民币|汇率|国债|原油|黄金|白银|铜|锂|半导体|芯片|算力|新能源|光伏|医药|银行|券商|保险|地产|汽车/;
+function fetchNews(){
+  return jsonp('https://zhibo.sina.com.cn/api/zhibo/feed?page=1&page_size=40&zhibo_id=152&tag_id=0&dire=f&dpc=1', 9000, 'callback').then(function(d){
+    var list = ((((d || {}).result || {}).data || {}).feed || {}).list || [];
+    return list.map(function(it){
+      return { t: it.create_time || '', txt: String(it.rich_text || '').replace(/<[^>]*>/g, '').trim() };
+    }).filter(function(x){ return x.txt; });
+  });
+}
+function renderNews(list){
+  var hit = list.filter(function(x){ return NEWS_KW.test(x.txt); });
+  var show = (hit.length >= 5 ? hit : list).slice(0, 20);
+  $('news').innerHTML = show.map(function(x){
+    var hm = x.t.length >= 16 ? x.t.slice(5, 16) : x.t;
+    return '<div class="news-item"><span class="t">' + esc(hm) + '</span>' + esc(x.txt) + '</div>';
+  }).join('') || '<div class="news-item">暂无快讯</div>';
+  $('newsUpd').textContent = show.length ? ('更新 ' + show[0].t.slice(5, 16)) : '';
+}
+
 /* ================= 加载流程 ================= */
 function loadBoards(){
   var type = state.type;
@@ -576,6 +638,7 @@ function refresh(manual){
       state.dataTs = ts || null; state.dataDate = dd;
       renderIndices();
     }).catch(function(e){ console.warn('指数加载失败', e); toast('指数数据加载失败：' + e.message); }),
+    fetchMovers().then(function(res){ renderMovers(res[0], res[1]); }).catch(function(e){ console.warn('异动股加载失败', e); }),
     (state.drill ? loadStocks() : loadBoards()).then(function(){ renderAll(); }).catch(function(e){
       console.warn('板块加载失败', e);
       var has = state.drill ? state.stocks : state.boards;
@@ -583,6 +646,9 @@ function refresh(manual){
       toast('行情数据加载失败：' + e.message + '（已保留上次数据）');
     })
   ];
+  if (!state.newsTs || Date.now() - state.newsTs > 300000){ // 快讯5分钟刷新一次
+    jobs.push(fetchNews().then(function(list){ state.newsTs = Date.now(); renderNews(list); }).catch(function(e){ console.warn('快讯加载失败', e); }));
+  }
   return Promise.all(jobs).then(function(){
     state.loading = false; state.lastFetch = new Date();
     $('btnRefresh').disabled = false; $('btnRefresh').textContent = '⟳ 刷新';
