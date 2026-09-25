@@ -278,7 +278,7 @@ function toast(msg){ var t = $('toast'); t.textContent = msg; t.style.display = 
 var cbSeq = 0;
 function jsonp(url, timeout, cbParam){
   return new Promise(function(resolve, reject){
-    var cb = '__emcb_' + Date.now().toString(36) + '_' + (cbSeq++);
+    var cb = 'emcb' + Date.now().toString(36) + (cbSeq++); // 纯字母数字：部分接口（如新浪）拒绝下划线回调名
     var s = document.createElement('script'), done = false;
     var timer = setTimeout(function(){ finish(new Error('请求超时')); }, timeout || 9000);
     function finish(err, data){
@@ -647,7 +647,10 @@ function refresh(manual){
     })
   ];
   if (!state.newsTs || Date.now() - state.newsTs > 300000){ // 快讯5分钟刷新一次
-    jobs.push(fetchNews().then(function(list){ state.newsTs = Date.now(); renderNews(list); }).catch(function(e){ console.warn('快讯加载失败', e); }));
+    jobs.push(fetchNews().then(function(list){ state.newsTs = Date.now(); renderNews(list); }).catch(function(e){
+      console.warn('快讯加载失败', e);
+      $('news').innerHTML = '<div class="news-item">快讯加载失败（' + esc(e.message) + '），点右上“⟳ 刷新”重试</div>';
+    }));
   }
   return Promise.all(jobs).then(function(){
     state.loading = false; state.lastFetch = new Date();
