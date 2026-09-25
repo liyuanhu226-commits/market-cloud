@@ -156,7 +156,7 @@ yyyy`);var i=Wt(t),n=e?"getUTC":"get",a=i[n+"FullYear"](),o=i[n+"Month"]()+1,s=i
     <label class="chk" title="剔除 融资融券、沪股通、MSCI、HS300_、大盘股、机构重仓、破净股、次新股 等指数/风格/统计类概念"><input type="checkbox" id="chkFilter" checked> 过滤风格类</label>
   </span>
   <span class="spacer"></span>
-  <label><span class="lt">自动刷新</span><select id="selRefresh"><option value="0">关闭</option><option value="10">10秒</option><option value="30" selected>30秒</option><option value="60">60秒</option><option value="120">2分钟</option></select></label>
+  <label><span class="lt">自动刷新</span><select id="selRefresh"><option value="0">关闭</option><option value="5">5秒</option><option value="10" selected>10秒</option><option value="30">30秒</option><option value="60">60秒</option><option value="120">2分钟</option></select></label>
   <span id="countdown"></span>
   <button class="btn primary" id="btnRefresh">⟳ 刷新</button>
 </div>
@@ -214,7 +214,7 @@ document.addEventListener('touchstart', function(){ lastPointer = 'touch'; }, {c
 function isTouchNow(){ return lastPointer === 'touch' || lastPointer === 'pen'; }
 
 /* ================= 状态 ================= */
-var state = { type: 'hy1', area: 'mcap', color: 'pct', topN: 200, filter: true, refreshSec: 30,
+var state = { type: 'hy1', area: 'mcap', color: 'pct', topN: 200, filter: true, refreshSec: 10,
   boards: null, boardsType: null, drill: null, stocks: null, indices: null, dataDate: null, dataTs: null,
   loading: false, nextAt: 0, lastFetch: null, selected: null };
 
