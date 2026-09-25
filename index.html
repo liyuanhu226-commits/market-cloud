@@ -18,6 +18,7 @@ header{display:flex;align-items:center;gap:18px;padding:10px 16px;border-bottom:
 .indices{display:flex;gap:8px;flex:1;overflow:hidden}
 .idx{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:118px}
 .idx .n{color:var(--sub);font-size:12px}
+.idx .rg{font-size:10px;color:#8b93a5;border:1px solid var(--line);border-radius:4px;padding:0 3px;margin-right:4px;vertical-align:1px}
 .idx .p{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
 .idx .c{font-size:12px;font-variant-numeric:tabular-nums}
 .meta{text-align:right;line-height:1.6;white-space:nowrap;font-size:12px;color:var(--sub)}
@@ -196,8 +197,10 @@ var TYPES = {
 var BOARD_FIELDS = 'f12,f13,f14,f2,f3,f6,f20,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f104,f105,f106,f124,f128,f136,f140,f141';
 var STOCK_FIELDS = 'f12,f13,f14,f2,f3,f6,f8,f20,f62,f184,f66,f72,f124';
 var INDICES = [
-  {secid: '1.000001', name: '上证指数'}, {secid: '0.399001', name: '深证成指'}, {secid: '0.399006', name: '创业板指'},
-  {secid: '1.000300', name: '沪深300'}, {secid: '1.000688', name: '科创50'}, {secid: '0.899050', name: '北证50'}
+  {secid: '1.000001', name: '上证指数', mkt: 'cn'}, {secid: '0.399001', name: '深证成指', mkt: 'cn'}, {secid: '0.399006', name: '创业板指', mkt: 'cn'},
+  {secid: '1.000300', name: '沪深300', mkt: 'cn'}, {secid: '1.000688', name: '科创50', mkt: 'cn'}, {secid: '0.899050', name: '北证50', mkt: 'cn'},
+  {secid: '100.DJIA', name: '道琼斯', mkt: 'us', rg: '美股'}, {secid: '100.SPX', name: '标普500', mkt: 'us', rg: '美股'},
+  {secid: '100.KS11', name: '韩国综合', mkt: 'kr', rg: '韩股'}
 ];
 var DRILL_MAX = window.innerWidth < 760 ? 150 : 300;  // 下钻最多取市值前 N 只成分股（手机 150，电脑 300）
 var BAR_N = 10;
@@ -519,7 +522,8 @@ function renderIndices(){
     var r = d.filter(function(x){ return (x.f13 + '.' + x.f12) === ix.secid; })[0];
     if (!r) return '';
     var p = num(r.f2), c = num(r.f4), pc = num(r.f3), k = cls(pc);
-    return '<div class="idx"><div class="n">' + esc(r.f14 || ix.name) + '</div><div class="p ' + k + '">' + (p == null ? '--' : p.toFixed(2)) + '</div><div class="c ' + k + '">' + sgn(c) + '　' + pctS(pc) + '</div></div>';
+    var rg = ix.rg ? '<span class="rg">' + esc(ix.rg) + '</span>' : '';
+    return '<div class="idx"><div class="n">' + rg + esc(ix.name || r.f14) + '</div><div class="p ' + k + '">' + (p == null ? '--' : p.toFixed(2)) + '</div><div class="c ' + k + '">' + sgn(c) + '　' + pctS(pc) + '</div></div>';
   }).join('');
   $('indices').innerHTML = html;
   var sh = d.filter(function(x){ return x.f12 === '000001' && x.f13 === 1; })[0], sz = d.filter(function(x){ return x.f12 === '399001' && x.f13 === 0; })[0];
@@ -563,8 +567,12 @@ function refresh(manual){
   var jobs = [
     fetchIndices().then(function(d){
       state.indices = d.diff || [];
-      var ts = 0, dd = null;
-      state.indices.forEach(function(x){ if (num(x.f124) > ts) { ts = num(x.f124); } if (x.f297 && (!dd || String(x.f297) > dd)) dd = String(x.f297); });
+      var ts = 0, dd = null, cnIds = {};
+      INDICES.forEach(function(ix){ if (ix.mkt === 'cn') cnIds[ix.secid] = 1; });
+      state.indices.forEach(function(x){
+        if (!cnIds[x.f13 + '.' + x.f12]) return; // 海外指数不参与 A 股交易状态与数据时间判定
+        if (num(x.f124) > ts) { ts = num(x.f124); } if (x.f297 && (!dd || String(x.f297) > dd)) dd = String(x.f297);
+      });
       state.dataTs = ts || null; state.dataDate = dd;
       renderIndices();
     }).catch(function(e){ console.warn('指数加载失败', e); toast('指数数据加载失败：' + e.message); }),
