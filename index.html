@@ -203,7 +203,7 @@ yyyy`);var i=Wt(t),n=e?"getUTC":"get",a=i[n+"FullYear"](),o=i[n+"Month"]()+1,s=i
 </main>
 <footer>
   <span>数据来源：东方财富公开行情接口（<span id="srcHost">push2.eastmoney.com</span>，JSONP）、新浪 7x24 快讯。主力净流入 = 超大单 + 大单净流入。数据仅供参考，不构成投资建议。</span>
-  <span id="fetchInfo"></span>
+  <span><span id="fetchInfo"></span><span id="busuanzi_container_site_pv" style="display:none"> · 本站总访问量 <span id="busuanzi_value_site_pv"></span> 次</span></span>
 </footer>
 <div id="toast"></div>
 
@@ -708,6 +708,11 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && stat
 
 refresh(true);
 })();
+</script>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<script>
+/* 访问量计数：不蒜子加载成功后显示，失败则保持隐藏 */
+(function(){var n=0,t=setInterval(function(){var v=document.getElementById('busuanzi_value_site_pv');if(v&&v.textContent.trim()){document.getElementById('busuanzi_container_site_pv').style.display='';clearInterval(t);}else if(++n>10){clearInterval(t);}},500);})();
 </script>
 </body>
 </html>
